@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#f8f6f3">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>习惯打卡</title>
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#f5f2ed;--card:#fff;--text:#1d1d1f;--text-secondary:#8e8e93;--text-tertiary:#c7c7cc;--border:#e5e5ea;--green:#34c759;--green-bg:#e8f8ed;--green-dark:#28a745;--shadow:0 1px 3px rgba(0,0,0,.06);--radius:12px;--radius-sm:8px;--max-w:500px}
+html{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","PingFang SC","Noto Sans SC",sans-serif;background:var(--bg);color:var(--text);min-height:100%;display:flex;justify-content:center;-webkit-font-smoothing:antialiased;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)0}
+#app{width:100%;max-width:var(--max-w);padding:20px 20px 32px;display:flex;flex-direction:column;min-height:100vh}
+header{text-align:center;padding:8px 0 4px}
+#date-display{font-size:20px;font-weight:600;color:var(--text)}
+#weekday-display{font-size:13px;color:var(--text-secondary);margin-top:2px}
+.progress-wrap{margin:16px 0 20px;display:flex;flex-direction:column;align-items:center;gap:8px}
+#progress-text{font-size:14px;font-weight:500;color:var(--text-secondary)}
+#progress-text .num{color:var(--green-dark);font-weight:600}
+#progress-text .total{color:var(--text);font-weight:600}
+.progress-bar{width:160px;height:4px;background:var(--border);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:var(--green);border-radius:4px;transition:width .4s;width:0}
+nav{display:flex;background:var(--card);border-radius:var(--radius);padding:4px;margin-bottom:16px;box-shadow:var(--shadow)}
+.tab{flex:1;padding:10px 0;border:none;background:transparent;font-size:14px;font-weight:500;color:var(--text-secondary);cursor:pointer;border-radius:var(--radius-sm);transition:all .25s;font-family:inherit;-webkit-tap-highlight-color:transparent}
+.tab.active{background:var(--text);color:#fff}
+.view{display:none;flex:1;flex-direction:column}
+.view.active{display:flex}
+#habit-list{list-style:none;display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.habit-item{display:flex;align-items:center;gap:12px;background:var(--card);padding:14px 16px;border-radius:var(--radius);box-shadow:var(--shadow);transition:transform .2s,opacity .2s;animation:slideIn .3s ease}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.habit-checkbox{width:28px;height:28px;border-radius:50%;border:2px solid var(--text-tertiary);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:all .25s;-webkit-tap-highlight-color:transparent;user-select:none}
+.habit-checkbox.checked{background:var(--green);border-color:var(--green);animation:pop .35s}
+.habit-checkbox.checked::after{content:"";display:block;width:8px;height:13px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg) translateY(-1px)}
+@keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.2)}100%{transform:scale(1)}}
+.habit-name{flex:1;font-size:16px;font-weight:450;cursor:pointer;padding:2px 0;transition:color .25s;-webkit-tap-highlight-color:transparent;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.habit-name.checked{color:var(--text-secondary);text-decoration:line-through}
+.habit-name-edit{flex:1;font-size:16px;font-weight:450;font-family:inherit;border:none;border-bottom:2px solid var(--green);background:transparent;outline:none;padding:2px 0}
+.habit-delete{width:32px;height:32px;border:none;background:transparent;color:var(--text-tertiary);font-size:18px;cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;-webkit-tap-highlight-color:transparent;opacity:0}
+.habit-item:hover .habit-delete,.habit-item:active .habit-delete{opacity:1}
+.habit-delete:hover{background:var(--danger-bg);color:var(--danger)}
+@media(hover:none){.habit-delete{opacity:.5}}
+.habit-item.removing{transform:translateX(100%);opacity:0}
+#add-habit-form{display:flex;gap:8px;margin-top:auto;padding-top:8px}
+#habit-input{flex:1;padding:14px 16px;border:1.5px solid var(--border);border-radius:var(--radius);font-size:15px;font-family:inherit;outline:none;background:var(--card);transition:border-color .2s;color:var(--text)}
+#habit-input:focus{border-color:var(--green)}
+#habit-input::placeholder{color:var(--text-tertiary)}
+#add-btn{width:48px;height:48px;border:none;border-radius:var(--radius);background:var(--text);color:#fff;font-size:22px;font-weight:300;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s,transform .15s;-webkit-tap-highlight-color:transparent}
+#add-btn:hover{background:#000}
+#add-btn:active{transform:scale(.95)}
+.empty-state{text-align:center;padding:48px 20px;color:var(--text-secondary)}
+.empty-state .icon{font-size:48px;margin-bottom:12px;display:block}
+.empty-state p{font-size:14px;line-height:1.6}
+.history-header{text-align:center;padding:4px 0 12px}
+.history-header .month-label{font-size:15px;font-weight:600}
+.history-header .stats{font-size:13px;color:var(--text-secondary);margin-top:4px}
+.history-header .stats .num{color:var(--green-dark);font-weight:600}
+#history-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding:8px 0}
+.grid-header-cell{text-align:center;font-size:11px;font-weight:500;color:var(--text-tertiary);padding:6px 0}
+.day-cell{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:13px;font-weight:450;background:var(--card);cursor:pointer;transition:transform .15s;-webkit-tap-highlight-color:transparent}
+.day-cell:active{transform:scale(.92)}
+.day-cell.future{background:transparent;color:var(--text-tertiary);cursor:default}
+.day-cell.today{box-shadow:0 0 0 2px var(--text);font-weight:600}
+.day-cell.none{background:var(--card);color:var(--text-tertiary)}
+.day-cell.low{background:#f0efed;color:var(--text-secondary)}
+.day-cell.mid{background:#d4edda;color:#155724}
+.day-cell.high{background:var(--green-bg);color:var(--green-dark);font-weight:600}
+.day-cell.full{background:var(--green);color:#fff;font-weight:600}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.3);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.overlay.open{display:flex}
+.sheet{background:var(--card);border-radius:16px 16px 0 0;width:100%;max-width:var(--max-w);padding:20px 24px 32px;animation:slideUp .3s;max-height:70vh;overflow-y:auto}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-handle{width:36px;height:4px;background:var(--border);border-radius:4px;margin:0 auto 16px}
+.sheet-title{font-size:17px;font-weight:600;text-align:center;margin-bottom:16px}
+.sheet-habit{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:15px}
+.sheet-habit:last-child{border-bottom:none}
+.sheet-habit .dot{width:20px;height:20px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff}
+.sheet-habit .dot.yes{background:var(--green)}
+.sheet-habit .dot.no{background:var(--text-tertiary)}
+.sheet-habit .name{flex:1}
+.close-sheet{margin-top:16px;width:100%;padding:12px;border:none;border-radius:var(--radius);background:var(--bg);font-size:15px;font-weight:500;cursor:pointer;font-family:inherit}
+@media(max-width:420px){#app{padding:16px}#date-display{font-size:18px}.habit-item{padding:12px 14px}.habit-checkbox{width:24px;height:24px}.habit-name{font-size:15px}#habit-input{padding:12px 14px}#add-btn{width:44px;height:44px}.day-cell{font-size:12px}}
+</style>
+</head>
+<body>
+<div id="app">
+<header><div id="date-display"></div><div id="weekday-display"></div></header>
+<div class="progress-wrap"><div id="progress-text">今日打卡 <span class="num">0</span>/<span class="total">0</span></div><div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div></div>
+<nav><button class="tab active" data-tab="today">今日</button><button class="tab" data-tab="history">历史</button></nav>
+<div id="today-view" class="view active"><ul id="habit-list"></ul><div id="add-habit-form"><input type="text" id="habit-input" placeholder="添加新习惯…" autocomplete="off"><button id="add-btn">+</button></div></div>
+<div id="history-view" class="view"><div class="history-header"><div class="month-label"></div><div class="stats"></div></div><div id="history-grid"></div></div>
+</div>
+<div class="overlay" id="day-detail-overlay"><div class="sheet"><div class="sheet-handle"></div><div class="sheet-title" id="sheet-title"></div><div id="sheet-body"></div><button class="close-sheet" id="close-sheet">关闭</button></div></div>
+<script>
+const SK="habit-tracker-data",WD=["星期日","星期一","星期二","星期三","星期四","星期五","星期六"];
+function id$(){return"h_"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function ts(){const d=new Date;return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function fm(s){const p=s.split("-");return parseInt(p[1])+"月"+parseInt(p[2])+"日"}
+function dd(){return{habits:[{id:id$(),name:"学习",sortOrder:0},{id:id$(),name:"运动",sortOrder:1},{id:id$(),name:"早起",sortOrder:2}],records:{}}}
+function ld(){try{const r=localStorage.getItem(SK);if(r){const d=JSON.parse(r);if(d&&d.habits)return d}}catch(e){}const d=dd();sv(d);return d}
+function sv(d){localStorage.setItem(SK,JSON.stringify(d))}
+function tr(d){const t=ts();if(!d.records[t])d.records[t]={};return d.records[t]}
+function cp(s,d){const r=d.records[s];if(!r)return{done:0,total:d.habits.length};let n=0;for(const h of d.habits)if(r[h.id])n++;return{done:n,total:d.habits.length}}
+let dt=ld(),tb="today",ei=null;
+function es(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;")}
+function al(){dtf();prg();tb==="today"?tdy():hst()}
+function dtf(){const n=new Date;document.getElementById("date-display").textContent=(n.getMonth()+1)+"月"+n.getDate()+"日";document.getElementById("weekday-display").textContent=WD[n.getDay()]}
+function prg(){const r=tr(dt);let n=0;for(const h of dt.habits)if(r[h.id])n++;const t=dt.habits.length;document.querySelector("#progress-text .num").textContent=n;document.querySelector("#progress-text .total").textContent=t;document.getElementById("progress-fill").style.width=(t>0?Math.round(n/t*100):0)+"%"}
+function tdy(){const l=document.getElementById("habit-list");if(dt.habits.length===0){l.innerHTML='<div class="empty-state"><span class="icon">📋</span><p>还没有习惯呢<br>在上面添加一个吧</p></div>';return}const r=tr(dt),s=[...dt.habits].sort((a,b)=>a.sortOrder-b.sortOrder);l.innerHTML=s.map(h=>{const c=r[h.id]||false,e=ei===h.id;return'<li class="habit-item" data-id="'+h.id+'"><div class="habit-checkbox'+(c?" checked":"")+'" data-id="'+h.id+'"></div>'+(e?'<input class="habit-name-edit" value="'+es(h.name)+'" data-id="'+h.id+'" maxlength="20">':'<span class="habit-name'+(c?" checked":"")+'" data-id="'+h.id+'">'+es(h.name)+'</span>')+'<button class="habit-delete" data-id="'+h.id+'">×</button></li>'}).join("");document.getElementById("habit-input").focus()}
+function hst(){const n=new Date,days=[];for(let i=34;i>=0;i--){const d=new Date(n);d.setDate(d.getDate()-i);days.push(d)}const to=ts();document.querySelector(".history-header .month-label").textContent=days[0].getFullYear()+"年"+(days[0].getMonth()+1)+"月 — "+days[34].getFullYear()+"年"+(days[34].getMonth()+1)+"月";let wd=0,wt=0;for(let i=0;i<7;i++){const d=new Date(n);d.setDate(d.getDate()-i);const ds=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"),c=cp(ds,dt);wd+=c.done;wt+=c.total}document.querySelector(".history-header .stats").innerHTML='近7天完成率 <span class="num">'+(wt>0?Math.round(wd/wt*100):0)+"%</span>";const g=document.getElementById("history-grid");g.innerHTML=["一","二","三","四","五","六","日"].map(w=>'<div class="grid-header-cell">'+w+"</div>").join("");let fd=days[0].getDay();if(fd===0)fd=7;fd-=1;for(let i=0;i<fd;i++)g.innerHTML+="<div></div>";for(const d of days){const ds=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"),isT=ds===to,isF=ds>to,dn=d.getDate();let c="day-cell";if(isF)c+=" future";else if(isT)c+=" today";if(!isF){const x=cp(ds,dt),p=x.total>0?x.done/x.total:0;if(x.total===0||p===0)c+=" none";else if(p<.34)c+=" low";else if(p<.67)c+=" mid";else if(p<1)c+=" high";else c+=" full"}g.innerHTML+='<div class="'+c+'" data-date="'+ds+'"><span>'+dn+"</span></div>"}}
+function sw(t){tb=t;document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));document.querySelector('.tab[data-tab="'+t+'"]').classList.add("active");document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));document.getElementById(t+"-view").classList.add("active");ei=null;t==="today"?tdy():hst()}
+function dtl(ds){const o=document.getElementById("day-detail-overlay");document.getElementById("sheet-title").textContent=fm(ds)+" "+WD[new Date(ds).getDay()];const r=dt.records[ds]||{},s=[...dt.habits].sort((a,b)=>a.sortOrder-b.sortOrder);document.getElementById("sheet-body").innerHTML=s.length===0?'<div style="text-align:center;padding:16px;color:var(--text-secondary);font-size:14px;">还没有习惯</div>':s.map(h=>{const d=r[h.id]||false;return'<div class="sheet-habit"><div class="dot '+(d?"yes":"no")+'">'+(d?"✓":"")+'</div><span class="name">'+es(h.name)+'</span><span style="font-size:13px;color:var(--text-secondary)">'+(d?"已完成":"未完成")+'</span></div>'}).join("");o.classList.add("open")}
+document.addEventListener("click",function(e){const t=e.target;if(t.classList.contains("tab")){sw(t.dataset.tab);return}if(t.classList.contains("habit-checkbox")){const id=t.dataset.id,r=tr(dt);r[id]=!r[id];sv(dt);al();return}if(t.classList.contains("habit-delete")){const id=t.dataset.id;t.closest(".habit-item").classList.add("removing");setTimeout(()=>{dt.habits=dt.habits.filter(h=>h.id!==id);for(const d in dt.records)delete dt.records[d][id];sv(dt);al()},250);return}if(t.classList.contains("habit-name")){ei=t.dataset.id;tdy();setTimeout(()=>{const i=document.querySelector('.habit-name-edit[data-id="'+t.dataset.id+'"]');if(i){i.focus();i.select()}},50);return}if(t.classList.contains("day-cell")&&!t.classList.contains("future")&&t.dataset.date)dtl(t.dataset.date);if(t.classList.contains("overlay"))document.getElementById("day-detail-overlay").classList.remove("open")})
+document.addEventListener("focusout",function(e){if(e.target.classList.contains("habit-name-edit"))dn(e.target)})
+document.addEventListener("keydown",function(e){if(e.key==="Enter"&&e.target.classList.contains("habit-name-edit")){e.preventDefault();dn(e.target)}if(e.key==="Escape"&&e.target.classList.contains("habit-name-edit")){e.preventDefault();ei=null;tdy()}})
+function dn(i){const id=i.dataset.id,n=i.value.trim();if(n){const h=dt.habits.find(x=>x.id===id);if(h)h.name=n;sv(dt)}ei=null;tdy()}
+document.getElementById("add-btn").addEventListener("click",ad)
+document.getElementById("habit-input").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();ad()}})
+function ad(){const i=document.getElementById("habit-input"),n=i.value.trim();if(!n)return;dt.habits.push({id:id$(),name:n,sortOrder:dt.habits.length});sv(dt);i.value="";i.focus();al()}
+document.getElementById("close-sheet").addEventListener("click",function(){document.getElementById("day-detail-overlay").classList.remove("open")})
+al()
+</script>
+</body>
+</html>
